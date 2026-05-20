@@ -335,7 +335,7 @@ export function signInLocally(
 
   if (!user) {
     return {
-      error: "We could not find an account with those demo credentials.",
+      error: "We could not find a local development account with those credentials.",
       state,
     }
   }
@@ -362,7 +362,7 @@ export function signUpLocally(
     )
   ) {
     return {
-      error: "An account with that email already exists in demo mode.",
+      error: "A local development account with that email already exists.",
       state,
     }
   }

@@ -1,11 +1,6 @@
 import { InternshipDetail } from "@/components/internships/internship-detail"
-import { seedInternships } from "@/lib/demo-data"
 
-export async function generateStaticParams() {
-  return seedInternships.map((internship) => ({
-    slug: internship.slug,
-  }))
-}
+export const dynamic = "force-dynamic"
 
 export default async function InternshipDetailPage({
   params,

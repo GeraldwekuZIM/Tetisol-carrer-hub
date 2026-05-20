@@ -9,9 +9,9 @@ import {
   useSyncExternalStore,
 } from "react"
 
-import { demoPersonas as seededDemoPersonas } from "@/lib/demo-data"
 import { isInternalUser } from "@/lib/access"
 import { getPublishedCourses, getPublishedInternships } from "@/lib/content"
+import { isDemoModeEnabled, logDataSource } from "@/lib/runtime-mode"
 import {
   getCompletedCourses,
   getEnrolledCourses,
@@ -23,8 +23,6 @@ import { getOpportunityIntelligence } from "@/lib/opportunity-intelligence"
 import { getRecommendedInternships } from "@/lib/recommendations"
 import {
   getSupabaseBrowserClient,
-  getSupabaseCurrentUser,
-  getSupabaseCurrentProfile,
   ensureSupabaseProfile,
   hasSupabaseEnv,
   mapSupabaseUser,
@@ -57,6 +55,15 @@ import {
   updateCv,
   updateProfile,
 } from "@/services/career-hub-service"
+import {
+  createRemoteInitialState,
+  loadSupabaseCareerHubState,
+  persistSupabaseCv,
+  persistSupabaseEnrollment,
+  persistSupabaseLessonProgress,
+  persistSupabaseProfile,
+  persistSupabaseSavedOpportunity,
+} from "@/services/supabase-state-service"
 import {
   loadCareerHubState,
   saveCareerHubState,
@@ -151,8 +158,12 @@ export function CareerHubProvider({
 }: {
   children: React.ReactNode
 }) {
+  const demoMode = isDemoModeEnabled()
+  const supabaseEnabled = hasSupabaseEnv() && !demoMode
   const [state, setState] = useState<CareerHubState>(() =>
-    hydrateCareerHubState(loadCareerHubState() ?? createInitialState())
+    demoMode
+      ? hydrateCareerHubState(loadCareerHubState() ?? createInitialState())
+      : createRemoteInitialState()
   )
   const hydrated = useSyncExternalStore(
     subscribeToHydration,
@@ -165,30 +176,79 @@ export function CareerHubProvider({
       return
     }
 
-    saveCareerHubState(state)
-  }, [hydrated, state])
+    if (demoMode) {
+      saveCareerHubState(state)
+    }
+  }, [demoMode, hydrated, state])
 
   useEffect(() => {
-    if (!hydrated || !hasSupabaseEnv()) {
+    if (!hydrated) {
       return
     }
 
-    void getSupabaseCurrentUser().then(async (user) => {
-      if (!user) {
-        return
-      }
+    if (demoMode) {
+      logDataSource("fallback-demo", "Development demo mode is explicitly enabled.")
+      return
+    }
 
-      const profile = await getSupabaseCurrentProfile()
-      setState((currentState) =>
-        syncAuthenticatedUser(currentState, {
-          ...mapSupabaseUser(user),
-          fullName: profile?.fullName || mapSupabaseUser(user).fullName,
-          email: profile?.email || mapSupabaseUser(user).email,
-          role: profile?.role ?? mapSupabaseUser(user).role,
-        })
-      )
+    if (!hasSupabaseEnv()) {
+      logDataSource("fallback-demo", "Supabase env vars are missing; production will show empty remote state.")
+      return
+    }
+
+    const client = getSupabaseBrowserClient()
+    if (!client) {
+      return
+    }
+
+    let cancelled = false
+
+    void client.auth.getUser().then(async ({ data }) => {
+      try {
+        const remoteState = await loadSupabaseCareerHubState(client, data.user)
+        if (cancelled) {
+          return
+        }
+
+        setState(remoteState)
+        logDataSource(
+          "supabase",
+          `Loaded ${remoteState.courses.length} courses, ${remoteState.internships.length} opportunities, user=${data.user?.id ?? "anon"}.`
+        )
+      } catch (error) {
+        logDataSource(
+          "supabase",
+          error instanceof Error ? error.message : "Unable to load remote state."
+        )
+        if (!cancelled) {
+          setState(createRemoteInitialState())
+        }
+      }
     })
-  }, [hydrated])
+
+    const {
+      data: { subscription },
+    } = client.auth.onAuthStateChange((_event, session) => {
+      void loadSupabaseCareerHubState(client, session?.user ?? null)
+        .then((remoteState) => {
+          if (!cancelled) {
+            setState(remoteState)
+            logDataSource("supabase", "Auth session changed; remote state refreshed.")
+          }
+        })
+        .catch((error) => {
+          logDataSource(
+            "supabase",
+            error instanceof Error ? error.message : "Unable to refresh remote state."
+          )
+        })
+    })
+
+    return () => {
+      cancelled = true
+      subscription.unsubscribe()
+    }
+  }, [demoMode, hydrated])
 
   const activeUser = getActiveUser(state)
   const activeWorkspace = getActiveWorkspace(state)
@@ -319,7 +379,7 @@ export function CareerHubProvider({
   )
 
   async function signIn(email: string, password: string): Promise<ActionFeedback> {
-    if (hasSupabaseEnv()) {
+    if (supabaseEnabled) {
       const client = getSupabaseBrowserClient()
       if (!client) {
         return {
@@ -341,19 +401,20 @@ export function CareerHubProvider({
       }
 
       const authenticatedUser = data.user
-      const profile = await getSupabaseCurrentProfile()
-      setState((currentState) =>
-        syncAuthenticatedUser(currentState, {
-          ...mapSupabaseUser(authenticatedUser),
-          fullName: profile?.fullName || mapSupabaseUser(authenticatedUser).fullName,
-          email: profile?.email || mapSupabaseUser(authenticatedUser).email,
-          role: profile?.role ?? mapSupabaseUser(authenticatedUser).role,
-        })
-      )
+      const remoteState = await loadSupabaseCareerHubState(client, authenticatedUser)
+      setState(remoteState)
+      logDataSource("supabase", `Authenticated ${authenticatedUser.id} and loaded remote dashboard data.`)
 
       return {
         success: true,
         message: "Welcome back. Your learning and career workspace is ready.",
+      }
+    }
+
+    if (!demoMode) {
+      return {
+        success: false,
+        message: "Supabase is not configured. Add the Netlify/local environment variables and try again.",
       }
     }
 
@@ -368,7 +429,7 @@ export function CareerHubProvider({
     setState(result.state)
     return {
       success: true,
-      message: "Signed in with local demo mode.",
+      message: "Signed in with the local development workspace.",
     }
   }
 
@@ -377,7 +438,7 @@ export function CareerHubProvider({
     email: string,
     password: string
   ): Promise<ActionFeedback> {
-    if (hasSupabaseEnv()) {
+    if (supabaseEnabled) {
       const client = getSupabaseBrowserClient()
       if (!client) {
         return {
@@ -412,12 +473,15 @@ export function CareerHubProvider({
           fullName,
           role: "student",
         })
-        setState((currentState) =>
-          syncAuthenticatedUser(currentState, {
-            ...mappedUser,
-            fullName: profile?.fullName || fullName,
-            role: profile?.role ?? "student",
-          })
+        const remoteState = await loadSupabaseCareerHubState(client, createdUser)
+        setState(
+          profile
+            ? remoteState
+            : syncAuthenticatedUser(remoteState, {
+                ...mappedUser,
+                fullName,
+                role: "student",
+              })
         )
       }
 
@@ -425,6 +489,13 @@ export function CareerHubProvider({
         success: true,
         message:
           "Account created. If email confirmation is enabled, check your inbox before continuing.",
+      }
+    }
+
+    if (!demoMode) {
+      return {
+        success: false,
+        message: "Supabase is not configured. Add the Netlify/local environment variables and try again.",
       }
     }
 
@@ -444,12 +515,12 @@ export function CareerHubProvider({
     setState(result.state)
     return {
       success: true,
-      message: "Demo account created. Let's finish your onboarding.",
+      message: "Local development account created. Let's finish your onboarding.",
     }
   }
 
   async function signOut() {
-    if (hasSupabaseEnv()) {
+    if (supabaseEnabled) {
       const client = getSupabaseBrowserClient()
       await client?.auth.signOut()
     }
@@ -475,20 +546,53 @@ export function CareerHubProvider({
     upcomingDeadlines,
     dashboardReminders,
     opportunityIntelligence,
-    demoPersonas: seededDemoPersonas,
-    hasSupabase: hasSupabaseEnv(),
+    demoPersonas: [],
+    hasSupabase: supabaseEnabled,
     isAdmin,
     signIn,
     signUp,
     signOut,
-    completeOnboarding: (profile) =>
-      setState((currentState) => completeOnboarding(currentState, profile)),
-    updateProfile: (profile) =>
-      setState((currentState) => updateProfile(currentState, profile)),
-    toggleSavedInternship: (internshipId) =>
+    completeOnboarding: (profile) => {
+      if (supabaseEnabled && state.activeUserId) {
+        const client = getSupabaseBrowserClient()
+        if (client) {
+          void persistSupabaseProfile(client, state.activeUserId, profile).catch((error) =>
+            logDataSource("supabase", `Profile update failed: ${error.message}`)
+          )
+        }
+      }
+      setState((currentState) => completeOnboarding(currentState, profile))
+    },
+    updateProfile: (profile) => {
+      if (supabaseEnabled && state.activeUserId) {
+        const client = getSupabaseBrowserClient()
+        if (client) {
+          void persistSupabaseProfile(client, state.activeUserId, profile).catch((error) =>
+            logDataSource("supabase", `Profile update failed: ${error.message}`)
+          )
+        }
+      }
+      setState((currentState) => updateProfile(currentState, profile))
+    },
+    toggleSavedInternship: (internshipId) => {
+      const shouldSave = !activeWorkspace?.savedInternshipIds.includes(internshipId)
+      if (supabaseEnabled && state.activeUserId) {
+        const client = getSupabaseBrowserClient()
+        if (client) {
+          void persistSupabaseSavedOpportunity(
+            client,
+            state.activeUserId,
+            internshipId,
+            shouldSave
+          ).catch((error) =>
+            logDataSource("supabase", `Saved opportunity update failed: ${error.message}`)
+          )
+        }
+      }
       setState((currentState) =>
         toggleSavedInternship(currentState, internshipId)
-      ),
+      )
+    },
     addInternshipToTracker: (internshipId, status) =>
       setState((currentState) =>
         addInternshipToTracker(currentState, internshipId, status)
@@ -499,14 +603,46 @@ export function CareerHubProvider({
       setState((currentState) =>
         updateApplicationDetails(currentState, applicationId, updates)
       ),
-    updateCv: (cv) =>
-      setState((currentState) => updateCv(currentState, cv)),
+    updateCv: (cv) => {
+      if (supabaseEnabled && state.activeUserId) {
+        const client = getSupabaseBrowserClient()
+        if (client) {
+          void persistSupabaseCv(client, state.activeUserId, cv).catch((error) =>
+            logDataSource("supabase", `CV update failed: ${error.message}`)
+          )
+        }
+      }
+      setState((currentState) => updateCv(currentState, cv))
+    },
     importLearningIntoCv: () =>
       setState((currentState) => importLearningIntoCv(currentState)),
-    enrollInCourse: (courseId) =>
-      setState((currentState) => enrollInCourse(currentState, courseId)),
-    markLessonComplete: (courseId, lessonId) =>
-      setState((currentState) => markLessonComplete(currentState, courseId, lessonId)),
+    enrollInCourse: (courseId) => {
+      if (supabaseEnabled && state.activeUserId) {
+        const client = getSupabaseBrowserClient()
+        if (client) {
+          void persistSupabaseEnrollment(client, state.activeUserId, courseId).catch((error) =>
+            logDataSource("supabase", `Enrollment write failed: ${error.message}`)
+          )
+        }
+      }
+      setState((currentState) => enrollInCourse(currentState, courseId))
+    },
+    markLessonComplete: (courseId, lessonId) => {
+      if (supabaseEnabled && state.activeUserId) {
+        const client = getSupabaseBrowserClient()
+        if (client) {
+          void persistSupabaseLessonProgress(
+            client,
+            state.activeUserId,
+            courseId,
+            lessonId
+          ).catch((error) =>
+            logDataSource("supabase", `Lesson progress write failed: ${error.message}`)
+          )
+        }
+      }
+      setState((currentState) => markLessonComplete(currentState, courseId, lessonId))
+    },
     saveLearningNote: (courseId, lessonId, content) =>
       setState((currentState) =>
         saveLearningNote(currentState, courseId, lessonId, content)

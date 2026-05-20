@@ -145,7 +145,7 @@ export function AdminShell({
 
             <div className="rounded-[1.4rem] border border-white/10 bg-white/8 p-4">
               <p className="text-xs uppercase tracking-[0.24em] text-slate-400">
-                Current inventory
+                Current learning catalog
               </p>
               <div className="mt-4 grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
                 <div className="rounded-[1rem] border border-white/10 bg-white/8 px-4 py-3">
@@ -231,7 +231,7 @@ export function AdminShell({
 
             <div className="rounded-[1.4rem] border border-white/10 bg-white/8 p-4 text-sm leading-7 text-slate-300">
               Signed in as <span className="font-semibold text-white">{activeUser.fullName}</span>.
-              Use the product dashboard for learner flows and this workspace for publishing and operational updates.
+              Use the learner dashboard for student flows and this workspace for publishing and operational updates.
             </div>
           </div>
         </aside>
@@ -276,7 +276,7 @@ export function AdminShell({
                   })}
                   href="/dashboard"
                 >
-                  Product dashboard
+                  Learner dashboard
                 </Link>
                 <Link
                   className={buttonVariants({

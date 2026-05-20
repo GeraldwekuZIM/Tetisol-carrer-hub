@@ -254,7 +254,7 @@ export function FloatingCopilot() {
             </div>
 
             <div className="mt-6 rounded-[1.25rem] border border-border bg-white/80 px-4 py-3 text-xs leading-6 text-slate-500">
-              Mock-intelligent for now. The panel is route-aware and ready to be wired to a real LLM later without changing the product shell.
+              Route-aware assistant panel. It can be connected to a real LLM later without changing the learning workspace.
             </div>
           </div>
         </div>

@@ -8,7 +8,7 @@ export function OutcomesSection() {
       <SectionHeading
         description="Tetisol is not positioned as a content dump. It is a structured platform for building confidence, visible proof, and career readiness over time."
         eyebrow="Learning Outcomes"
-        title="Certificates, progress, and employability signals built into the product"
+        title="Certificates, progress, and employability signals built into the platform"
       />
 
       <div className="mt-10 grid gap-5 lg:grid-cols-3">

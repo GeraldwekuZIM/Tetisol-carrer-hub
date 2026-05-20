@@ -113,9 +113,32 @@ If the shell path has not refreshed:
 6. Add environment variables:
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+   - `NEXT_PUBLIC_ENABLE_DEMO_MODE=false`
 7. Deploy.
 
 The project includes `netlify.toml` with the Netlify Next.js plugin configuration.
+
+Important: Netlify must not receive `SUPABASE_SERVICE_ROLE_KEY`. That key is only for local seeding.
+
+## 8.1 Verify Supabase Is Live
+
+Before presenting, sign in with a seeded Supabase account and open:
+
+```text
+/debug/backend
+```
+
+In development this page is visible for backend checks. In production it only renders for an authenticated admin profile.
+
+Expected result after running `supabase/schema.sql` and `npm run seed:supabase`:
+
+- Supabase URL detected: `Yes`
+- Profile row status: an admin/student/lecturer row
+- Courses count: greater than `0`
+- Opportunities count: greater than `0`
+- Enrollments count: greater than `0`
+
+If the page says that tables are missing, paste `supabase/schema.sql` into Supabase SQL Editor and run it.
 
 ## 9. Vercel Alternative
 

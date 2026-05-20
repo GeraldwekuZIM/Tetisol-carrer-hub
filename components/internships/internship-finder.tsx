@@ -186,7 +186,7 @@ export function InternshipFinder({
             <p className="mt-3 text-sm leading-7 text-slate-300">
               Most internship boards only surface jobs. Tetisol surfaces roles and
               explains why they fit, using the learning evidence you are building in
-              the same product.
+              the same learning workspace.
             </p>
           </div>
         </CardContent>

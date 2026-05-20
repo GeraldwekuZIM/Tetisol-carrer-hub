@@ -11,7 +11,6 @@ import {
   ArrowLeftIcon,
   BookOpenIcon,
   LockKeyholeIcon,
-  SparklesIcon,
   TargetIcon,
 } from "lucide-react"
 
@@ -21,7 +20,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
-import type { DemoPersona } from "@/types"
 
 const signInSchema = z.object({
   email: z.string().email(),
@@ -37,15 +35,15 @@ type SignUpValues = z.infer<typeof signUpSchema>
 
 export function AuthPanel() {
   const router = useRouter()
-  const { signIn, signUp, hasSupabase, demoPersonas } = useCareerHub()
+  const { signIn, signUp, hasSupabase } = useCareerHub()
   const [mode, setMode] = useState<"signin" | "signup">("signin")
   const [isPending, setIsPending] = useState(false)
 
   const signInForm = useForm<SignInValues>({
     resolver: zodResolver(signInSchema),
     defaultValues: {
-      email: "demo@tetisol.com",
-      password: "careerhub",
+      email: "",
+      password: "",
     },
   })
 
@@ -96,16 +94,6 @@ export function AuthPanel() {
     })
   }
 
-  function handlePersonaAccess(persona: DemoPersona) {
-    setMode("signin")
-    signInForm.setValue("email", persona.email, { shouldValidate: true })
-    signInForm.setValue("password", persona.password, { shouldValidate: true })
-
-    if (!hasSupabase) {
-      completeSignIn(persona.email, persona.password)
-    }
-  }
-
   return (
     <div className="section-shell flex min-h-screen items-center justify-center py-12">
       <div className="grid w-full max-w-6xl gap-8 lg:grid-cols-[1.05fr_0.95fr]">
@@ -152,67 +140,11 @@ export function AuthPanel() {
             </div>
 
             {!hasSupabase ? (
-              <div className="futuristic-shell panel-shimmer overflow-hidden rounded-[1.75rem] border border-primary/12 bg-slate-950 p-6 text-white shadow-[0_28px_70px_-40px_rgba(15,23,42,0.72)]">
-                <div className="ambient-grid absolute inset-0 opacity-20" />
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(129,140,248,0.24),transparent_30%),radial-gradient(circle_at_bottom_right,rgba(56,189,248,0.18),transparent_26%)]" />
-                <div className="relative space-y-4">
-                  <div className="flex items-center gap-3">
-                    <div className="rounded-2xl border border-white/10 bg-white/10 p-3 text-sky-200">
-                      <SparklesIcon className="size-5" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold uppercase tracking-[0.24em] text-sky-200">
-                        Demo mission states
-                      </p>
-                      <h2 className="mt-1 font-heading text-2xl font-semibold text-white">
-                        Open a fully seeded learner journey in one click
-                      </h2>
-                    </div>
-                  </div>
-                  <p className="max-w-2xl text-sm leading-7 text-slate-300">
-                    These workspaces are preloaded with realistic progress, certificates, CV quality, reminders, and opportunity states so the platform feels alive before backend wiring is complete.
-                  </p>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    {demoPersonas.map((persona) => (
-                      <button
-                        className="hover-signal rounded-[1.4rem] border border-white/10 bg-white/8 p-4 text-left transition hover:border-sky-300/20 hover:bg-white/12"
-                        key={persona.id}
-                        onClick={() => handlePersonaAccess(persona)}
-                        type="button"
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <p className="text-xs uppercase tracking-[0.24em] text-slate-400">
-                              {persona.state}
-                            </p>
-                            <h3 className="mt-2 font-heading text-xl font-semibold text-white">
-                              {persona.fullName}
-                            </h3>
-                          </div>
-                          <div className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs font-medium text-sky-100">
-                            Open
-                          </div>
-                        </div>
-                        <p className="mt-3 text-sm leading-7 text-slate-300">
-                          {persona.description}
-                        </p>
-                        <div className="mt-4 flex flex-wrap gap-2">
-                          {persona.focus.slice(0, 3).map((focus) => (
-                            <span
-                              className="rounded-full border border-white/10 bg-white/8 px-3 py-1.5 text-xs text-slate-200"
-                              key={focus}
-                            >
-                              {focus}
-                            </span>
-                          ))}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                  <div className="rounded-[1.4rem] border border-white/10 bg-white/8 p-4 text-sm leading-7 text-slate-300">
-                    Internal CMS demo access: <strong className="text-white">admin@tetisol.com</strong> / <strong className="text-white">careerhub</strong>.
-                  </div>
-                </div>
+              <div className="rounded-[1.5rem] border border-amber-200 bg-amber-50 p-5 text-sm leading-7 text-amber-900">
+                Supabase environment variables are not available in this build. Add
+                <strong> NEXT_PUBLIC_SUPABASE_URL</strong> and
+                <strong> NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY</strong> locally and on Netlify
+                before presenting this login flow.
               </div>
             ) : null}
           </div>
@@ -294,8 +226,8 @@ export function AuthPanel() {
                   ) : null}
                 </div>
                 {!hasSupabase ? (
-                  <div className="rounded-[1.25rem] border border-primary/15 bg-primary/8 p-4 text-sm leading-7 text-slate-600">
-                    Demo mode is active. Use any seeded learner persona, or sign in manually with <strong>demo@tetisol.com</strong> / <strong>careerhub</strong>. Internal admin access uses <strong>admin@tetisol.com</strong> / <strong>careerhub</strong>.
+                  <div className="rounded-[1.25rem] border border-amber-200 bg-amber-50 p-4 text-sm leading-7 text-amber-900">
+                    Backend configuration is missing for this environment. Sign-in is disabled until Supabase env variables are configured.
                   </div>
                 ) : null}
                 <Button

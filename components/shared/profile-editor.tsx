@@ -170,7 +170,7 @@ export function ProfileEditor({
                 render={({ field }) => (
                   <TagInput
                     onChange={field.onChange}
-                    placeholder="AI, Product, Analytics..."
+                    placeholder="AI, Web Development, Analytics..."
                     value={field.value}
                   />
                 )}

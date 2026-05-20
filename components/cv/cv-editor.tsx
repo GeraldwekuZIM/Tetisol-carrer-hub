@@ -306,7 +306,7 @@ export function CVEditor() {
                 <Input
                   id="headline"
                   {...form.register("headline")}
-                  placeholder="AI-focused product learner building practical internship-ready tools"
+                  placeholder="AI-focused learner building practical internship-ready tools"
                 />
               </div>
               <div className="space-y-2 md:col-span-2">

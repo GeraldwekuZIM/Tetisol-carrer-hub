@@ -400,7 +400,7 @@ with check (student_id = auth.uid() or public.is_admin());
 drop policy if exists "opportunities_read_all_authenticated" on public.opportunities;
 create policy "opportunities_read_all_authenticated"
 on public.opportunities for select
-using (auth.uid() is not null);
+using (true);
 
 drop policy if exists "opportunities_manage_admin_lecturer" on public.opportunities;
 create policy "opportunities_manage_admin_lecturer"

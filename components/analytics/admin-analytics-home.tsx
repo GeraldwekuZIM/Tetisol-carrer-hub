@@ -53,7 +53,7 @@ export function AdminAnalyticsHome() {
               })}
               href="/dashboard"
             >
-              Open learner product
+              Open learner dashboard
             </Link>
           </div>
         }
@@ -61,7 +61,7 @@ export function AdminAnalyticsHome() {
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-7">
         <StatCard
-          helper="Learners with seeded workspace activity"
+          helper="Learners with recorded workspace activity"
           icon={Users2Icon}
           label="Students"
           value={`${analytics.totalStudents}`}
