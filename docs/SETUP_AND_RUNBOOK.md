@@ -80,8 +80,9 @@ To reset a demo, clear localStorage and refresh.
 1. Create a Supabase project.
 2. Add the public URL and publishable key to `.env.local`.
 3. Run `supabase/schema.sql` in the Supabase SQL editor.
-4. Run `supabase/seed.sql`.
-5. Enable email auth if you want real sign in and sign up.
+4. Add `SUPABASE_SERVICE_ROLE_KEY` to `.env.local` locally only.
+5. Run `npm run seed:supabase`.
+6. Enable email auth if you want real sign in and sign up.
 
 Current Supabase coverage:
 
@@ -186,4 +187,3 @@ This matches the local framework docs in `node_modules/next/dist/docs/`.
 7. Sign in as `admin@tetisol.com`.
 8. Visit admin courses, internships, analytics, and one student detail page.
 9. Keep `docs/DEMO_GUIDE.md` open as the talk track.
-

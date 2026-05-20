@@ -8,9 +8,11 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
+    "seed:supabase": "node scripts/seed-supabase.js",
     "test:build": "npm run typecheck && npm run lint && npm run build",
     "test:e2e": "node scripts/e2e-smoke.mjs",
     "test:load": "node scripts/load-test.mjs",
+    "test:load:artillery": "npx artillery run --target http://localhost:3000 tests/load/tetisol-load.yml",
     "test:performance": "node scripts/load-test.mjs --scenario mixed --users 50"
   },
   "dependencies": {
@@ -40,6 +42,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "artillery": "^2.0.32",
     "eslint": "^9",
     "eslint-config-next": "16.2.4",
     "tailwindcss": "^4",

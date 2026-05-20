@@ -1,6 +1,10 @@
 "use client"
 
 export {
+  createClient,
+} from "@/utils/supabase/client"
+
+export {
   getSupabaseBrowserClient,
   getSupabaseCurrentUser,
   hasSupabaseEnv,

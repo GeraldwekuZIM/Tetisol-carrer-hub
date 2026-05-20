@@ -10,6 +10,12 @@ The current app remains presentation-ready because the existing UI and demo work
 
 Selected database/backend: Supabase PostgreSQL.
 
+Official project:
+
+```text
+https://copxovwoureigdtjbhgq.supabase.co
+```
+
 Supabase is the best fit because Tetisol Hub needs relational data and role-aware access:
 
 - Students belong to courses through enrollments.
@@ -21,38 +27,24 @@ Supabase is the best fit because Tetisol Hub needs relational data and role-awar
 
 ## 3. Database Schema Summary
 
-Existing schema coverage:
+Official schema coverage:
 
 - `profiles`
-- `user_preferences`
 - `courses`
-- `course_collaborators`
-- `course_modules`
-- `course_lessons`
-- `course_enrollments`
+- `lessons`
+- `enrollments`
 - `lesson_progress`
-- `quizzes`
-- `quiz_questions`
-- `quiz_attempts`
-- `certificates`
-- `internships`
-- `saved_internships`
-- `tracked_applications`
-- `cvs`
-- `cv_sections`
-- `reminders`
-
-Supervisor-readiness additions:
-
-- Role field on `profiles`: `student`, `instructor`, `admin`
-- `courses.instructor_id`, `courses.status`, and enrollment capacity
-- `participation_records`
+- `attendance_records`
 - `assignments`
 - `assignment_submissions`
+- `opportunities`
+- `saved_opportunities`
 - `announcements`
 - `notifications`
-- `platform_activity_summary` view
-- Additional indexes for enrollments, progress, course ownership, participation, submissions, and notifications
+- `cv_profiles`
+- `admin_platform_summary` view
+- RLS helper functions: `is_admin()`, `is_lecturer()`, `is_student()`, `manages_course()`
+- Performance indexes for roles, course ownership, status, enrollments, progress, attendance, opportunities, saved opportunities, and notifications
 
 RLS policies now support:
 
@@ -60,20 +52,19 @@ RLS policies now support:
 - Lecturers reading course participation and enrolled student data for courses they manage.
 - Admin users managing platform-wide records.
 
-SQL files:
+SQL and seed files:
 
 - `supabase/schema.sql`
-- `supabase/supervisor_readiness_schema.sql`
-- `supabase/seed_load_test.sql`
+- `scripts/seed-supabase.js`
 
 ## 4. Free Hosting Option Selected And Why
 
 Recommended:
 
-- Frontend: Vercel first choice, Netlify acceptable.
+- Frontend: Netlify first choice, Vercel acceptable.
 - Backend/Auth/Storage: Supabase.
 
-Vercel is the simplest option for this Next.js app because it detects the framework, runs `npm run build`, and handles the `.next` output automatically. Netlify is also viable with the Next.js runtime integration.
+Netlify is a good academic-demo target because it has GitHub integration, a free tier, and simple environment variable setup. The project includes `netlify.toml`. Vercel remains a fallback if Netlify's Next.js runtime creates deployment friction.
 
 ## 5. 50-User Test Scenario
 
@@ -90,26 +81,28 @@ The test target is:
 - Lecturer participation checks
 - Admin analytics checks
 
-Implemented test data:
+Seed script test data:
 
 - 50 student auth/profile records
 - 5 lecturer auth/profile records
-- 3 admin auth/profile records
-- 12 courses
-- 36 modules
-- 108 lessons
-- 200 enrollments
+- 2 admin auth/profile records
+- 15 courses
+- 5 to 8 lessons per course
+- Enrollments across courses
 - Lesson progress records
-- Participation records
-- 16 opportunities
+- Attendance records
+- Assignments and submissions
+- 20 opportunities
 - Saved opportunities
-- Tracked applications
 - CV records
 - Announcements and notifications
 
 ## 6. Load Test Results
 
-Load test tooling was added in `scripts/load-test.mjs`.
+Load test tooling:
+
+- Default reliable runner: `scripts/load-test.mjs`
+- Artillery scenario template: `tests/load/tetisol-load.yml`
 
 Run locally:
 
@@ -133,54 +126,71 @@ The script reports:
 - p95 response time
 - Max response time
 
-Measured local production-build result:
+Measured local production-build result after Supabase SSR proxy wiring:
 
 ```text
-Base URL: http://localhost:3006
+Base URL: http://localhost:3008
 Scenario: mixed
 Virtual users: 50
-Duration: 15 seconds
-Total requests: 8,479
+Duration: 10 seconds
+Total requests: 3,834
 Success rate: 100.00%
 Failed requests: 0
-p50: 75 ms
-p90: 150 ms
-p95: 193 ms
-Max: 425 ms
+p50: 102 ms
+p90: 233 ms
+p95: 326 ms
+Max: 1,241 ms
 ```
 
-Supporting smoke-test result against `http://localhost:3005`:
+Supporting smoke-test result against `http://localhost:3008`:
 
 ```text
 Routes checked: 12
 Failed routes: 0
-Slowest route: 146 ms
+Slowest route: 189 ms
 ```
 
 These numbers prove the built frontend can handle the requested 50-user mixed browsing/progress-update simulation locally. The same load test should be repeated against the final deployed URL after Supabase is configured.
+
+Artillery result against local production server:
+
+```text
+Base URL: http://localhost:3010
+Scenario: 50 student and lecturer mixed usage
+Duration: 60 second ramp plus drain time
+HTTP 200 responses: 21,420
+Virtual users created: 1,530
+Virtual users completed: 1,530
+Virtual users failed: 0
+Mean response time: 629.8 ms
+p95 response time: 2,101.1 ms
+p99 response time: 3,197.8 ms
+Max response time: 4,234 ms
+```
 
 ## 7. Bugs Found
 
 Audit findings:
 
-- Runtime persistence is still mostly `localStorage`, not full Supabase persistence.
-- No formal 50-user seed data existed.
-- No load test script existed.
-- No e2e smoke test script existed.
-- `.env.example` did not list testing/deployment variables.
-- The database schema needed explicit roles, lecturer ownership, attendance/participation, assignments, announcements, notifications, and extra indexes.
-- Admin/lecturer authorization was mostly a client-side experience.
+- Runtime UI still preserves the local demo fallback.
+- Full Supabase persistence was not wired through every screen.
+- The backend needed an official schema matching student, lecturer, admin, course, lesson, enrollment, progress, attendance, opportunity, and CV records.
+- The project needed a service-role seed script.
+- The project needed Netlify deployment configuration.
 
 ## 8. Bugs Fixed
 
 Changes made:
 
-- Added role-aware Supabase readiness SQL.
-- Added realistic 50-student seed SQL.
-- Added database service adapter for Supabase-backed reads/writes.
+- Added official Supabase SSR helpers under `utils/supabase`.
+- Added official Supabase schema with RLS and indexes.
+- Added realistic 50-student service-role seed script.
+- Added typed Supabase service modules.
 - Added health endpoint.
 - Added progress-update test endpoint.
 - Added smoke test and load test scripts.
+- Added Artillery load scenario template.
+- Added Netlify deployment config.
 - Added deployment/testing documentation.
 - Expanded environment variable example.
 - Added package scripts for build, e2e, load, and performance checks.
@@ -195,37 +205,37 @@ Changes made:
   - participation by student/course
   - assignment submissions by student/assignment
   - notifications by user
-- Added a `platform_activity_summary` view for admin dashboard aggregation.
+- Added an `admin_platform_summary` view for admin dashboard aggregation.
 - Added a service layer to support moving expensive client-side reads into database-backed queries.
 - Added test scripts to catch route failures and slow responses before presentation.
 
 ## 10. Remaining Limitations
 
-- The UI still keeps the local demo fallback. This is intentional for presentation safety, but it means full production persistence is not finished.
+- The UI still keeps the local demo fallback. This is intentional for presentation safety, but it means full production persistence is not finished on every screen.
 - Full server-side route protection is still a future hardening step.
 - The load test is practical and repeatable, but it is not a full browser-based real-user test with screenshots.
 - Supabase Auth email behavior depends on project settings.
 - Certificate file generation and public verification remain scaffolded rather than fully productionized.
+- Artillery is installed and the committed scenario runs successfully locally. The default Node load runner is still kept because it is faster for quick pre-demo checks.
 
 ## 11. Deployment Steps
 
 1. Create a Supabase project.
 2. Run `supabase/schema.sql`.
-3. Run `supabase/supervisor_readiness_schema.sql`.
-4. Run `supabase/seed_load_test.sql`.
-5. Create `.env.local` from `.env.example`.
-6. Fill in `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
-7. Run `npm run test:build`.
-8. Run the app locally and execute `npm run test:e2e`.
-9. Execute `npm run test:load`.
-10. Push to GitHub.
-11. Import into Vercel or Netlify.
-12. Add the same Supabase env vars in hosting settings.
-13. Deploy.
-14. Run `npm run test:load` against the deployed URL.
+3. Create `.env.local` from `.env.example`.
+4. Fill in `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, and local-only `SUPABASE_SERVICE_ROLE_KEY`.
+5. Run `npm run seed:supabase`.
+6. Run `npm run test:build`.
+7. Run the app locally and execute `npm run test:e2e`.
+8. Execute `npm run test:load`.
+9. Push to GitHub.
+10. Import into Netlify.
+11. Add the public Supabase env vars in Netlify settings.
+12. Deploy.
+13. Run `npm run test:load` against the deployed URL.
 
 ## 12. Final Conclusion
 
 The project is now prepared for supervisor review as a professional MVP test package. It has a correct Supabase PostgreSQL direction, role-aware schema hardening, realistic 50-student seed data, repeatable smoke/load testing scripts, deployment documentation, and a clear report of remaining production limitations.
 
-For the 50-user academic demo scenario, the app handled the local production-build browsing and lightweight progress-update simulation successfully: 8,479 requests, 100.00% success, 0 failures, and 193 ms p95 response time. It is ready for supervisor review as an MVP test package. Full production readiness still requires completing the remaining feature-by-feature migration from local state to Supabase-backed persistence and repeating the load test against the final deployed URL.
+For the 50-user academic demo scenario, the app handled the local production-build browsing and lightweight progress-update simulation successfully: 3,834 requests, 100.00% success, 0 failures, and 326 ms p95 response time. It is ready for supervisor review as an MVP test package. Full production readiness still requires completing the remaining feature-by-feature migration from local state to Supabase-backed persistence and repeating the load test against the final deployed URL.

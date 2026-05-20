@@ -87,15 +87,14 @@ If both values are present, sign in and sign up use Supabase Auth. If either val
 
 ## Supabase Setup
 
-1. Create a new Supabase project.
+1. Use the official Supabase project: `https://copxovwoureigdtjbhgq.supabase.co`.
 2. Copy your project URL and publishable key into `.env.local`.
 3. Run [`supabase/schema.sql`](./supabase/schema.sql).
-4. Run [`supabase/supervisor_readiness_schema.sql`](./supabase/supervisor_readiness_schema.sql) for role-aware policies, indexes, participation, assignments, announcements, notifications, and reporting support.
-5. Run [`supabase/seed.sql`](./supabase/seed.sql) for the base demo content.
-6. Run [`supabase/seed_load_test.sql`](./supabase/seed_load_test.sql) when you need the 50-student supervisor test data.
-7. Enable email auth in Supabase if you want real signup/login.
+4. Add `SUPABASE_SERVICE_ROLE_KEY` to `.env.local` locally only.
+5. Run `npm run seed:supabase` for the 50-student supervisor test data.
+6. Enable email auth in Supabase if you want real signup/login.
 
-The schema includes profiles, preferences, courses, modules, lessons, enrollments, lesson progress, quizzes, quiz attempts, certificates, internships, saved internships, tracked applications, CVs, reminders, indexes, RLS policies, and private storage buckets.
+The schema includes profiles, roles, courses, lessons, enrollments, lesson progress, attendance, assignments, submissions, opportunities, saved opportunities, announcements, notifications, CV profiles, indexes, RLS policies, and admin summary reporting.
 
 ## Testing For Supervisor Review
 
@@ -115,6 +114,12 @@ Run the 50-user load-style test:
 
 ```bash
 npm run test:load
+```
+
+Optional Artillery scenario:
+
+```bash
+npm run test:load:artillery
 ```
 
 The load script reports success rate and response-time percentiles. Use `TEST_BASE_URL` to test a deployed site:

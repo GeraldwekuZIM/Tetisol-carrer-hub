@@ -1,0 +1,45 @@
+config:
+  target: "http://localhost:3000"
+  phases:
+    - duration: 60
+      arrivalRate: 1
+      rampTo: 50
+      name: "Ramp to 50 virtual users"
+  defaults:
+    headers:
+      user-agent: "tetisol-artillery-load-test/1.0"
+scenarios:
+  - name: "50 student and lecturer mixed usage"
+    flow:
+      - get:
+          url: "/"
+      - get:
+          url: "/auth"
+      - get:
+          url: "/dashboard"
+      - get:
+          url: "/courses"
+      - get:
+          url: "/courses/practical-prompt-engineering"
+      - get:
+          url: "/learning"
+      - get:
+          url: "/learning/practical-prompt-engineering"
+      - post:
+          url: "/api/load-test/progress"
+          json:
+            studentId: "student-artillery"
+            courseId: "practical-prompt-engineering"
+            lessonId: "lesson-artillery"
+      - get:
+          url: "/internships"
+      - get:
+          url: "/applications"
+      - get:
+          url: "/cv-builder"
+      - get:
+          url: "/admin"
+      - get:
+          url: "/admin/analytics"
+      - get:
+          url: "/admin/courses"

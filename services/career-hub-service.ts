@@ -27,6 +27,7 @@ import type {
   ProfileInput,
   Quiz,
   QuizFeedback,
+  UserAccount,
   UserWorkspace,
 } from "@/types"
 
@@ -296,7 +297,7 @@ export function getActiveWorkspace(state: CareerHubState): UserWorkspace | null 
 
 export function syncAuthenticatedUser(
   state: CareerHubState,
-  user: { id: string; email: string; fullName: string }
+  user: { id: string; email: string; fullName: string; role?: UserAccount["role"] }
 ) {
   const nextState = cloneState(state)
   const existingUser = nextState.users.find((item) => item.id === user.id)
@@ -307,11 +308,12 @@ export function syncAuthenticatedUser(
       email: user.email,
       password: "",
       fullName: user.fullName,
-      role: "student",
+      role: user.role ?? "student",
     })
   } else {
     existingUser.email = user.email
     existingUser.fullName = user.fullName
+    existingUser.role = user.role ?? existingUser.role ?? "student"
   }
 
   ensureWorkspace(nextState, user.id, user.fullName)

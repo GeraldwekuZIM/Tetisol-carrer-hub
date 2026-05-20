@@ -1,7 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 
-import type { ApplicationStatus } from "@/types"
-
 type DatabaseResult<T> =
   | { data: T; error: null }
   | { data: null; error: string }
@@ -39,9 +37,8 @@ export function createCareerHubDatabaseService(client: SupabaseClient) {
       return runQuery(() =>
         client
           .from("courses")
-          .select("id, slug, title, category, level, duration_text, short_description, instructor_name, featured, popular, is_new, updated_at")
-          .eq("status", "Published")
-          .order("featured", { ascending: false })
+          .select("id, slug, title, category, level, description, thumbnail_url, instructor_id, updated_at")
+          .eq("status", "published")
           .order("updated_at", { ascending: false })
       )
     },
@@ -50,7 +47,7 @@ export function createCareerHubDatabaseService(client: SupabaseClient) {
       return runQuery(() =>
         client
           .from("courses")
-          .select("*, course_modules(*, course_lessons(*)), course_collaborators(*)")
+          .select("*, lessons(*)")
           .eq("slug", slug)
           .single()
       )
@@ -59,24 +56,23 @@ export function createCareerHubDatabaseService(client: SupabaseClient) {
     getStudentDashboard(userId: string) {
       return runQuery(() =>
         client
-          .from("course_enrollments")
+          .from("enrollments")
           .select("*, courses(id, slug, title, category), lesson_progress(*)")
-          .eq("user_id", userId)
-          .order("last_activity_at", { ascending: false })
+          .eq("student_id", userId)
+          .order("enrolled_at", { ascending: false })
       )
     },
 
     upsertEnrollment(userId: string, courseId: string) {
       return runQuery(() =>
         client
-          .from("course_enrollments")
+          .from("enrollments")
           .upsert(
             {
-              user_id: userId,
+              student_id: userId,
               course_id: courseId,
-              last_activity_at: new Date().toISOString(),
             },
-            { onConflict: "user_id,course_id" }
+            { onConflict: "student_id,course_id" }
           )
           .select()
           .single()
@@ -84,22 +80,25 @@ export function createCareerHubDatabaseService(client: SupabaseClient) {
     },
 
     upsertLessonProgress(payload: {
-      enrollmentId: string
+      studentId: string
+      courseId: string
       lessonId: string
-      completedAt?: string | null
-      note?: string
+      progressPercent: number
     }) {
       return runQuery(() =>
         client
           .from("lesson_progress")
           .upsert(
             {
-              enrollment_id: payload.enrollmentId,
+              student_id: payload.studentId,
+              course_id: payload.courseId,
               lesson_id: payload.lessonId,
-              completed_at: payload.completedAt ?? new Date().toISOString(),
-              note: payload.note ?? "",
+              progress_percent: payload.progressPercent,
+              completed: payload.progressPercent >= 100,
+              completed_at:
+                payload.progressPercent >= 100 ? new Date().toISOString() : null,
             },
-            { onConflict: "enrollment_id,lesson_id" }
+            { onConflict: "student_id,lesson_id" }
           )
           .select()
           .single()
@@ -109,10 +108,10 @@ export function createCareerHubDatabaseService(client: SupabaseClient) {
     getLecturerParticipation(courseId: string) {
       return runQuery(() =>
         client
-          .from("participation_records")
-          .select("*, profiles(id, name, school), courses(id, title)")
+          .from("attendance_records")
+          .select("*, profiles!attendance_records_student_id_fkey(id, full_name, email), courses(id, title)")
           .eq("course_id", courseId)
-          .order("participated_at", { ascending: false })
+          .order("attended_at", { ascending: false })
           .limit(200)
       )
     },
@@ -120,29 +119,26 @@ export function createCareerHubDatabaseService(client: SupabaseClient) {
     getAdminAnalyticsSnapshot() {
       return runQuery(() =>
         client
-          .from("platform_activity_summary")
+          .from("admin_platform_summary")
           .select("*")
           .single()
       )
     },
 
-    saveOpportunityApplication(payload: {
+    saveOpportunity(payload: {
       userId: string
-      internshipId: string
-      status: ApplicationStatus
-      notes?: string
-      deadline?: string
+      opportunityId: string
     }) {
       return runQuery(() =>
         client
-          .from("tracked_applications")
-          .upsert({
-            user_id: payload.userId,
-            internship_id: payload.internshipId,
-            status: payload.status,
-            notes: payload.notes ?? "",
-            deadline: payload.deadline || null,
-          })
+          .from("saved_opportunities")
+          .upsert(
+            {
+              student_id: payload.userId,
+              opportunity_id: payload.opportunityId,
+            },
+            { onConflict: "student_id,opportunity_id" }
+          )
           .select()
           .single()
       )

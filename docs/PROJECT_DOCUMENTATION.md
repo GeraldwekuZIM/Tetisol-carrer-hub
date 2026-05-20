@@ -99,7 +99,7 @@ The app uses the Next.js App Router. The local Next.js 16 docs confirm that:
 | `services/career-hub-service.ts` | State mutations for auth, learning, admin, CV, and internships |
 | `services/storage.ts` | LocalStorage load/save wrapper |
 | `supabase/schema.sql` | Database tables, policies, indexes, and storage buckets |
-| `supabase/seed.sql` | Supabase seed data |
+| `scripts/seed-supabase.js` | Service-role local Supabase seed script for supervisor test data |
 | `types/index.ts` | Shared domain types |
 
 ## State And Data Flow
@@ -282,4 +282,3 @@ Scaffolded:
 - Certificate file generation, download, sharing, and verification.
 - Storage-backed asset uploads.
 - Real AI/LLM-backed copilot responses.
-

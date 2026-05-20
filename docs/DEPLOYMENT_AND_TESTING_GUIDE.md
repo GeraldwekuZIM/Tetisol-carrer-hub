@@ -2,7 +2,7 @@
 
 ## Recommended Free Stack
 
-- Frontend hosting: Vercel or Netlify.
+- Frontend hosting: Netlify first, Vercel acceptable.
 - Database, Auth, and Storage: Supabase PostgreSQL.
 - Reason: this project needs relational student, lecturer, course, enrollment, progress, CV, and opportunity data. Supabase also gives Auth and RLS policies, which are necessary for role-based access.
 
@@ -46,12 +46,12 @@ $env:TEST_BASE_URL="http://localhost:3000"; npm run test:performance
 
 ## Supabase Setup
 
-1. Create a new Supabase project.
+1. Use the official Supabase project: `https://copxovwoureigdtjbhgq.supabase.co`.
 2. In the SQL editor, run `supabase/schema.sql`.
-3. Run `supabase/supervisor_readiness_schema.sql`.
-4. Run `supabase/seed_load_test.sql` for the 50-student supervisor data set.
-5. Copy the project URL and publishable anon key into `.env.local`.
-6. Keep the service role key out of browser code and hosting logs.
+3. Copy the project URL and publishable anon key into `.env.local`.
+4. Add `SUPABASE_SERVICE_ROLE_KEY` locally only.
+5. Run `npm run seed:supabase` for the 50-student supervisor data set.
+6. Keep the service role key out of browser code, GitHub, Netlify, and logs unless a server-only admin job explicitly requires it.
 
 Required environment variables:
 
@@ -68,6 +68,18 @@ Optional local-only variable:
 
 ```text
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+```
+
+Seed command:
+
+```bash
+npm run seed:supabase
+```
+
+Optional Artillery run against a deployed URL:
+
+```bash
+npx artillery run --target https://your-production-url tests/load/tetisol-load.yml
 ```
 
 ## Vercel Deployment

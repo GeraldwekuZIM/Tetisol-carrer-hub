@@ -24,6 +24,8 @@ import { getRecommendedInternships } from "@/lib/recommendations"
 import {
   getSupabaseBrowserClient,
   getSupabaseCurrentUser,
+  getSupabaseCurrentProfile,
+  ensureSupabaseProfile,
   hasSupabaseEnv,
   mapSupabaseUser,
 } from "@/lib/supabase"
@@ -171,13 +173,19 @@ export function CareerHubProvider({
       return
     }
 
-    void getSupabaseCurrentUser().then((user) => {
+    void getSupabaseCurrentUser().then(async (user) => {
       if (!user) {
         return
       }
 
+      const profile = await getSupabaseCurrentProfile()
       setState((currentState) =>
-        syncAuthenticatedUser(currentState, mapSupabaseUser(user))
+        syncAuthenticatedUser(currentState, {
+          ...mapSupabaseUser(user),
+          fullName: profile?.fullName || mapSupabaseUser(user).fullName,
+          email: profile?.email || mapSupabaseUser(user).email,
+          role: profile?.role ?? mapSupabaseUser(user).role,
+        })
       )
     })
   }, [hydrated])
@@ -333,8 +341,14 @@ export function CareerHubProvider({
       }
 
       const authenticatedUser = data.user
+      const profile = await getSupabaseCurrentProfile()
       setState((currentState) =>
-        syncAuthenticatedUser(currentState, mapSupabaseUser(authenticatedUser))
+        syncAuthenticatedUser(currentState, {
+          ...mapSupabaseUser(authenticatedUser),
+          fullName: profile?.fullName || mapSupabaseUser(authenticatedUser).fullName,
+          email: profile?.email || mapSupabaseUser(authenticatedUser).email,
+          role: profile?.role ?? mapSupabaseUser(authenticatedUser).role,
+        })
       )
 
       return {
@@ -391,8 +405,19 @@ export function CareerHubProvider({
 
       const createdUser = data.user
       if (createdUser) {
+        const mappedUser = mapSupabaseUser(createdUser)
+        const profile = await ensureSupabaseProfile({
+          id: createdUser.id,
+          email: mappedUser.email,
+          fullName,
+          role: "student",
+        })
         setState((currentState) =>
-          syncAuthenticatedUser(currentState, mapSupabaseUser(createdUser))
+          syncAuthenticatedUser(currentState, {
+            ...mappedUser,
+            fullName: profile?.fullName || fullName,
+            role: profile?.role ?? "student",
+          })
         )
       }
 
