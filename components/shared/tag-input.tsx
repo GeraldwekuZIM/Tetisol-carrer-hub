@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 
 type TagInputProps = {
-  value: string[]
+  value?: string[]
   onChange: (value: string[]) => void
   placeholder?: string
   className?: string
@@ -23,7 +23,7 @@ export function TagInput({
 }: TagInputProps) {
   const [draft, setDraft] = useState("")
   const normalizedValue = Array.from(
-    new Set(value.map((item) => item.trim()).filter(Boolean))
+    new Set((value ?? []).map((item) => item.trim()).filter(Boolean))
   )
 
   function commitTag() {

@@ -201,6 +201,25 @@ function normalizeJsonArray(value: unknown): string[] {
     .filter(Boolean)
 }
 
+function mapCvProjects(value: unknown): CVDocument["projects"] {
+  if (!Array.isArray(value)) {
+    return []
+  }
+
+  return value
+    .filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === "object")
+    .map((project, index) => ({
+      id: typeof project.id === "string" ? project.id : `project-${index + 1}`,
+      title: typeof project.title === "string" ? project.title : "",
+      role: typeof project.role === "string" ? project.role : "",
+      summary: typeof project.summary === "string" ? project.summary : "",
+      impact: typeof project.impact === "string" ? project.impact : "",
+      stack: normalizeJsonArray(project.stack),
+      sourceCourseId:
+        typeof project.sourceCourseId === "string" ? project.sourceCourseId : undefined,
+    }))
+}
+
 function mapCvProfile(row: CvProfileRow | null | undefined, profileId: string): CVDocument {
   if (!row) {
     return emptyCv(`cv-${profileId}`)
@@ -211,7 +230,7 @@ function mapCvProfile(row: CvProfileRow | null | undefined, profileId: string): 
     summary: row.summary ?? "",
     education: normalizeJsonArray(row.education).join("\n"),
     experience: normalizeJsonArray(row.experience),
-    projects: Array.isArray(row.projects) ? (row.projects as CVDocument["projects"]) : [],
+    projects: mapCvProjects(row.projects),
     skills: row.skills ?? [],
     lastUpdated: row.updated_at ?? new Date().toISOString(),
   }
